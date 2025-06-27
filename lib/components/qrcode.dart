@@ -1,10 +1,10 @@
+import 'dart:io';
 import 'package:fileflow/components/header.dart';
 import 'package:flutter/material.dart';
-import 'package:qr_flutter/qr_flutter.dart'; // Import for QR code generation
-import 'package:mobile_scanner/mobile_scanner.dart'; // Import for QR code scanning
-import 'package:permission_handler/permission_handler.dart'; // Import for camera permissions
+import 'package:qr_flutter/qr_flutter.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:permission_handler/permission_handler.dart';
 
-// QR Code Screen Component
 class QRCodeScreen extends StatefulWidget {
   final Function(String) setCurrentScreen;
 
@@ -15,26 +15,29 @@ class QRCodeScreen extends StatefulWidget {
 }
 
 class _QRCodeScreenState extends State<QRCodeScreen> {
-  String _qrMode = 'generate'; // 'generate' or 'scan'
-  String _qrData = 'fileflow_qr_data_example'; // Data to be encoded in the QR code
+  String _qrMode = 'generate';
+  String _qrData = '';
   MobileScannerController cameraController = MobileScannerController();
   String? _scannedCode;
+
+  ServerSocket? _serverSocket;
+  Socket? _clientSocket;
+  bool _isConnected = false;
 
   @override
   void initState() {
     super.initState();
     _requestCameraPermission();
+    _initServer();
   }
 
   Future<void> _requestCameraPermission() async {
     final status = await Permission.camera.request();
     if (status.isGranted) {
-      // Permission granted, nothing to do here specifically for initial load
+      // Permission granted
     } else if (status.isDenied) {
-      // Permission denied
       _showPermissionDeniedDialog('Camera permission is required to scan QR codes.');
     } else if (status.isPermanentlyDenied) {
-      // Permission permanently denied, open app settings
       _showPermissionDeniedDialog('Camera permission is permanently denied. Please enable it from app settings to scan QR codes.');
       openAppSettings();
     }
@@ -56,9 +59,59 @@ class _QRCodeScreenState extends State<QRCodeScreen> {
     );
   }
 
+  Future<void> _initServer() async {
+    // Start a server socket and encode its address in the QR code
+    final addresses = await NetworkInterface.list(
+      type: InternetAddressType.IPv4,
+      includeLoopback: false,
+    );
+    if (addresses.isNotEmpty && addresses.first.addresses.isNotEmpty) {
+      final ip = addresses.first.addresses.first.address;
+      _serverSocket = await ServerSocket.bind(ip, 0); // 0 = random port
+      final port = _serverSocket!.port;
+      setState(() {
+        _qrData = '$ip:$port';
+      });
+      _serverSocket!.listen((client) {
+        setState(() {
+          _isConnected = true;
+        });
+        _clientSocket = client;
+        // You can now send/receive files using _clientSocket
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Device connected! Ready to transfer files.')),
+        );
+      });
+    }
+  }
+
+  Future<void> _connectToServer(String data) async {
+    try {
+      final parts = data.split(':');
+      if (parts.length != 2) throw Exception('Invalid QR data');
+      final ip = parts[0];
+      final port = int.parse(parts[1]);
+      final socket = await Socket.connect(ip, port, timeout: const Duration(seconds: 5));
+      setState(() {
+        _isConnected = true;
+        _clientSocket = socket;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Connected! Ready to transfer files.')),
+      );
+      // You can now send/receive files using _clientSocket
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Connection failed: $e')),
+      );
+    }
+  }
+
   @override
   void dispose() {
     cameraController.dispose();
+    _serverSocket?.close();
+    _clientSocket?.close();
     super.dispose();
   }
 
@@ -73,6 +126,7 @@ class _QRCodeScreenState extends State<QRCodeScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
+                // ... (mode switch buttons, unchanged)
                 Container(
                   decoration: BoxDecoration(
                     color: Colors.grey[200],
@@ -86,7 +140,7 @@ class _QRCodeScreenState extends State<QRCodeScreen> {
                         child: ElevatedButton(
                           onPressed: () => setState(() {
                             _qrMode = 'generate';
-                            cameraController.stop(); // Stop scanner when switching to generate
+                            cameraController.stop();
                           }),
                           style: ElevatedButton.styleFrom(
                             foregroundColor: _qrMode == 'generate' ? Colors.white : Colors.grey[700],
@@ -105,9 +159,9 @@ class _QRCodeScreenState extends State<QRCodeScreen> {
                         child: ElevatedButton(
                           onPressed: () async {
                             setState(() => _qrMode = 'scan');
-                            await _requestCameraPermission(); // Request permission when switching to scan
+                            await _requestCameraPermission();
                             if (await Permission.camera.isGranted) {
-                              cameraController.start(); // Start scanner if permission granted
+                              cameraController.start();
                             }
                           },
                           style: ElevatedButton.styleFrom(
@@ -145,37 +199,32 @@ class _QRCodeScreenState extends State<QRCodeScreen> {
                     ),
                     child: Center(
                       child: QrImageView(
-                        data: _qrData, // Your data to be encoded
+                        data: _qrData.isEmpty ? 'waiting_for_ip' : _qrData,
                         version: QrVersions.auto,
                         size: 180.0,
                         backgroundColor: Colors.white,
                         gapless: true,
-                        // You can customize colors further
-                        // dataModuleStyle: const QrDataModuleStyle(
-                        //   dataModuleShape: QrDataModuleShape.square,
-                        //   color: Colors.black,
-                        // ),
-                        // eyeStyle: const QrEyeStyle(
-                        //   eyeShape: QrEyeShape.square,
-                        //   color: Colors.black,
-                        // ),
                       ),
                     ),
                   ),
                   const SizedBox(height: 24),
-                  const Text(
-                    "Share this QR code with another device to receive files.",
+                  Text(
+                    _isConnected
+                        ? "Device connected! Ready to transfer files."
+                        : "Share this QR code with another device to connect.",
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 16, color: Colors.grey),
+                    style: const TextStyle(fontSize: 16, color: Colors.grey),
                   ),
                   const SizedBox(height: 32),
                   ElevatedButton(
                     onPressed: () {
-                      // Logic to generate new QR.
-                      // For example, you might update _qrData with new information.
-                      // setState(() {
-                      //   _qrData = 'new_data_${DateTime.now().millisecondsSinceEpoch}';
-                      // });
+                      // Optionally regenerate QR (restart server)
+                      _serverSocket?.close();
+                      setState(() {
+                        _isConnected = false;
+                        _qrData = '';
+                      });
+                      _initServer();
                     },
                     style: ElevatedButton.styleFrom(
                       foregroundColor: Colors.white, backgroundColor: Colors.blue[600],
@@ -205,22 +254,23 @@ class _QRCodeScreenState extends State<QRCodeScreen> {
                         ),
                       ],
                     ),
-                    child: ClipRRect( // Clip to apply border radius to camera view
+                    child: ClipRRect(
                       borderRadius: BorderRadius.circular(12),
                       child: MobileScanner(
                         controller: cameraController,
-                        onDetect: (capture) {
+                        onDetect: (capture) async {
                           final List<Barcode> barcodes = capture.barcodes;
                           for (final barcode in barcodes) {
-                            debugPrint('Barcode found! ${barcode.rawValue}');
+                            if (_isConnected) return;
+                            final code = barcode.rawValue;
+                            debugPrint('Barcode found! $code');
                             setState(() {
-                              _scannedCode = barcode.rawValue;
+                              _scannedCode = code;
                             });
-                            // You can add logic here to navigate or process the scanned data
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Scanned: ${barcode.rawValue}')),
-                            );
-                            cameraController.stop(); // Stop scanning after first detection
+                            cameraController.stop();
+                            if (code != null) {
+                              await _connectToServer(code);
+                            }
                           }
                         },
                       ),
@@ -228,20 +278,23 @@ class _QRCodeScreenState extends State<QRCodeScreen> {
                   ),
                   const SizedBox(height: 24),
                   Text(
-                    _scannedCode != null
-                        ? "Scanned Data: $_scannedCode"
-                        : "Point your camera at a QR code to initiate a transfer.",
+                    _isConnected
+                        ? "Connected! Ready to transfer files."
+                        : (_scannedCode != null
+                            ? "Scanned Data: $_scannedCode"
+                            : "Point your camera at a QR code to connect."),
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 16, color: Colors.grey),
+                    style: const TextStyle(fontSize: 16, color: Colors.grey),
                   ),
                   const SizedBox(height: 32),
                   ElevatedButton(
                     onPressed: () async {
                       await _requestCameraPermission();
                       if (await Permission.camera.isGranted) {
-                        cameraController.start(); // Restart scanner
+                        cameraController.start();
                         setState(() {
-                          _scannedCode = null; // Clear previous scan
+                          _scannedCode = null;
+                          _isConnected = false;
                         });
                       }
                     },
@@ -255,6 +308,24 @@ class _QRCodeScreenState extends State<QRCodeScreen> {
                     ),
                     child:
                     const Text("Activate Scanner", style: TextStyle(fontSize: 16)),
+                  ),
+                ],
+                if (_isConnected) ...[
+                  const SizedBox(height: 24),
+                  ElevatedButton(
+                    onPressed: () {
+                      // TODO: Implement file picker and send file over _clientSocket
+                      // Example: _clientSocket?.add(fileBytes);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      foregroundColor: Colors.white, backgroundColor: Colors.green,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30)),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 20, vertical: 12),
+                      elevation: 3,
+                    ),
+                    child: const Text("Send File", style: TextStyle(fontSize: 16)),
                   ),
                 ],
               ],
