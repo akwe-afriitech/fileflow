@@ -23,7 +23,27 @@ class HomeScreen extends StatelessWidget {
                   textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 18, color: Colors.grey),
                 ),
-                const SizedBox(height: 48),
+                const SizedBox(height: 20),
+                ValueListenableBuilder<bool>(
+                  valueListenable: ConnectionStatusNotifier.instance,
+                  builder: (context, connected, _) {
+                    return Column(
+                      children: [
+                        const SizedBox(height: 10),
+                        Text(
+                          connected
+                              ? "Connected: Ready for transfer"
+                              : "Not connected: Waiting for connection",
+                          style: TextStyle(
+                            color: connected ? Colors.green : Colors.red,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
                 GridView.count(
                   shrinkWrap: true,
                   crossAxisCount: 2,
@@ -82,6 +102,40 @@ class HomeScreen extends StatelessWidget {
   }
 }
 
+class ConnectionStatusNotifier extends ValueNotifier<bool> {
+  static final ConnectionStatusNotifier _instance = ConnectionStatusNotifier._internal();
+
+  factory ConnectionStatusNotifier() {
+    return _instance;
+  }
+
+  ConnectionStatusNotifier._internal() : super(false);
+
+  // Singleton instance
+  static ConnectionStatusNotifier get instance => _instance;
+
+  // Method to update connection state
+  void updateConnectionState(bool isConnected) {
+    value = isConnected;
+  }
+
+  // Call this method to check connection status when HomeScreen is loaded
+  Future<void> checkConnectionFromQRCodeScreen(BuildContext context) async {
+    // Replace this with your actual logic to check connection status
+    // For example, you might call a service or check a provider
+    // Here, we simulate a check (replace with real implementation)
+    bool isConnected = await _simulateCheckConnection();
+    updateConnectionState(isConnected);
+  }
+
+  // Simulated async check (replace with real implementation)
+  Future<bool> _simulateCheckConnection() async {
+    await Future.delayed(const Duration(milliseconds: 300));
+    // TODO: Replace with actual check (e.g., via QRCodeScreen or a service)
+    return false;
+  }
+}
+
 // Reusable Feature Button for Home Screen
 class FeatureButton extends StatelessWidget {
   final IconData icon;
@@ -89,7 +143,7 @@ class FeatureButton extends StatelessWidget {
   final VoidCallback onPressed;
 
   const FeatureButton({
-    super.key,
+    super.key, 
     required this.icon,
     required this.label,
     required this.onPressed,

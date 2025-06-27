@@ -2,11 +2,11 @@ import 'package:fileflow/components/header.dart';
 import 'package:flutter/material.dart';
 // Wi-Fi Direct Screen Component
 
-
 // WiFiDirectScreen widget implementation
 class WiFiDirectScreen extends StatefulWidget {
   final void Function(String) setCurrentScreen;
-  const WiFiDirectScreen({Key? key, required this.setCurrentScreen}) : super(key: key);
+  const WiFiDirectScreen({Key? key, required this.setCurrentScreen})
+      : super(key: key);
 
   @override
   State<WiFiDirectScreen> createState() => _WiFiDirectScreenState();
@@ -66,10 +66,12 @@ class _WiFiDirectScreenState extends State<WiFiDirectScreen> {
                     // Logic to scan for devices
                   },
                   style: ElevatedButton.styleFrom(
-                    foregroundColor: Colors.white, backgroundColor: Colors.blue[500],
+                    foregroundColor: Colors.white,
+                    backgroundColor: Colors.blue[500],
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(30)),
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 24, vertical: 14),
                     elevation: 5,
                   ),
                   child: const Text(
@@ -98,78 +100,87 @@ class _WiFiDirectScreenState extends State<WiFiDirectScreen> {
                         const SizedBox(height: 12),
                         _devices.isEmpty
                             ? const Center(
-                          child: Text("No devices found.",
-                              style: TextStyle(color: Colors.grey)),
-                        )
+                                child: Text("No devices found.",
+                                    style: TextStyle(color: Colors.grey)),
+                              )
                             : Expanded(
-                          child: ListView.builder(
-                            itemCount: _devices.length,
-                            itemBuilder: (context, index) {
-                              final device = _devices[index];
-                              final isConnected =
-                                  device['status'] == 'Connected';
-                              final isConnecting =
-                                  device['status'] == 'Connecting...';
-                              return Card(
-                                margin: const EdgeInsets.only(bottom: 12),
-                                elevation: 2,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(16.0),
-                                  child: Row(
-                                    mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Column(
-                                        crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            device['name']!,
-                                            style: const TextStyle(
-                                                fontSize: 16,
-                                                fontWeight: FontWeight.w500),
-                                          ),
-                                          const SizedBox(height: 4),
-                                          Text(
-                                            "Status: ${device['status']!}",
-                                            style: TextStyle(
-                                              fontSize: 14,
-                                              color: isConnected
-                                                  ? Colors.green[600]
-                                                  : Colors.grey,
-                                            ),
-                                          ),
-                                        ],
+                                child: ListView.builder(
+                                  itemCount: _devices.length,
+                                  itemBuilder: (context, index) {
+                                    final device = _devices[index];
+                                    final isConnected =
+                                        device['status'] == 'Connected';
+                                    final isConnecting =
+                                        device['status'] == 'Connecting...';
+                                    return Card(
+                                      margin: const EdgeInsets.only(bottom: 12),
+                                      elevation: 2,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(10),
                                       ),
-                                      if (!isConnected)
-                                        ElevatedButton(
-                                          onPressed: isConnecting
-                                              ? null
-                                              : () => _handleConnect(device['id']!),
-                                          style: ElevatedButton.styleFrom(
-                                            foregroundColor: Colors.white,
-                                            backgroundColor: Colors.blue[500],
-                                            shape: RoundedRectangleBorder(
-                                                borderRadius:
-                                                BorderRadius.circular(20)),
-                                            padding: const EdgeInsets.symmetric(
-                                                horizontal: 16, vertical: 8),
-                                          ),
-                                          child: Text(
-                                            isConnecting ? "Connecting..." : "Connect",
-                                            style: const TextStyle(fontSize: 14),
-                                          ),
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(16.0),
+                                        child: Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  device['name']!,
+                                                  style: const TextStyle(
+                                                      fontSize: 16,
+                                                      fontWeight:
+                                                          FontWeight.w500),
+                                                ),
+                                                const SizedBox(height: 4),
+                                                Text(
+                                                  "Status: ${device['status']!}",
+                                                  style: TextStyle(
+                                                    fontSize: 14,
+                                                    color: isConnected
+                                                        ? Colors.green[600]
+                                                        : Colors.grey,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            if (!isConnected)
+                                              ElevatedButton(
+                                                onPressed: isConnecting
+                                                    ? null
+                                                    : () => _handleConnect(
+                                                        device['id']!),
+                                                style: ElevatedButton.styleFrom(
+                                                  foregroundColor: Colors.white,
+                                                  backgroundColor:
+                                                      Colors.blue[500],
+                                                  shape: RoundedRectangleBorder(
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              20)),
+                                                  padding: const EdgeInsets
+                                                      .symmetric(
+                                                      horizontal: 16,
+                                                      vertical: 8),
+                                                ),
+                                                child: Text(
+                                                  isConnecting
+                                                      ? "Connecting..."
+                                                      : "Connect",
+                                                  style: const TextStyle(
+                                                      fontSize: 14),
+                                                ),
+                                              ),
+                                          ],
                                         ),
-                                    ],
-                                  ),
+                                      ),
+                                    );
+                                  },
                                 ),
-                              );
-                            },
-                          ),
-                        ),
+                              ),
                       ],
                     ),
                   ),
