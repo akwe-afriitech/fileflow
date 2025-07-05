@@ -5,9 +5,17 @@ import 'package:fileflow/components/transfercomponent.dart';
 import 'package:fileflow/screens/home.dart';
 import 'package:fileflow/screens/wifidirect.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:fileflow/services/changenotifier.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(
+    // Wrap your entire app with the provider
+    ChangeNotifierProvider(
+      create: (context) => ConnectionService(),
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {

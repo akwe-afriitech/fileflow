@@ -1,10 +1,12 @@
+import 'dart:io';
+import 'dart:convert';
 import 'package:fileflow/components/header.dart';
 import 'package:fileflow/components/navbar.dart';
 import 'package:flutter/material.dart';
-import 'package:file_picker/file_picker.dart'; // Import file_picker
-import 'package:share_plus/share_plus.dart'; // Import share_plus
+import 'package:file_picker/file_picker.dart';
+import 'package:provider/provider.dart'; 
+import 'package:fileflow/services/changenotifier.dart'; 
 
-// Transfer Screen Component
 class TransferScreen extends StatefulWidget {
   final Function(String) setCurrentScreen;
 
@@ -16,64 +18,103 @@ class TransferScreen extends StatefulWidget {
 
 class _TransferScreenState extends State<TransferScreen> {
   String _transferStatus = 'idle'; // idle, selecting, transferring, complete, error
-  double _progress = 0.0; // Progress for the simulated transfer
+  double _progress = 0.0;
+  String _statusMessage = "Ready to send or receive files securely.";
 
-  // Handles initiating the file transfer process
+  // UPDATED: This method now uses the ConnectionService to send files directly.
   Future<void> _handleInitiateTransfer() async {
+    // Get the global connection service
+    final connectionService = Provider.of<ConnectionService>(context, listen: false);
+
+    // 1. Check if we are actually connected to another device
+    if (!connectionService.isConnected) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Not connected to any device. Please connect first.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     setState(() {
-      _transferStatus = 'selecting'; // Indicate that file selection is in progress
+      _transferStatus = 'selecting';
     });
 
     try {
-      // Pick files using file_picker
-      FilePickerResult? result = await FilePicker.platform.pickFiles(
-        allowMultiple: true, // Allow selecting multiple files
-      );
+      // 2. Pick a file (allowing only one for simplicity in this example)
+      FilePickerResult? result = await FilePicker.platform.pickFiles();
 
       if (result != null && result.files.isNotEmpty) {
-        // If files are selected, prepare them for sharing
-        final List<XFile> filesToShare = result.files.map((platformFile) {
-          return XFile(platformFile.path!); // Create XFile from file path
-        }).toList();
-
-        if (filesToShare.isNotEmpty) {
-          setState(() {
-            _transferStatus = 'transferring'; // Change status to show progress
-            _progress = 0.0; // Reset progress
-          });
-
-          // Simulate progress quickly since share_plus doesn't provide it
-          for (int i = 0; i <= 100; i += 10) {
-            await Future.delayed(const Duration(milliseconds: 50));
-            setState(() {
-              _progress = i.toDouble();
-            });
-          }
-
-          // Share the selected files using share_plus
-          await Share.shareXFiles(filesToShare, text: 'Sharing files from FileFlow');
-
-          setState(() {
-            _transferStatus = 'complete'; // Mark as complete after sharing
-          });
-        } else {
-          // No files selected, revert to idle
-          setState(() {
-            _transferStatus = 'idle';
-          });
-        }
+        File fileToSend = File(result.files.single.path!);
+        
+        // 3. Send the file using the active socket from our service
+        await _sendFile(connectionService.socket, fileToSend);
       } else {
-        // User cancelled file picking, revert to idle
+        // User cancelled the picker
         setState(() {
           _transferStatus = 'idle';
         });
       }
     } catch (e) {
-      // Handle any errors during file picking or sharing
-      debugPrint('Error during file transfer: $e');
+      debugPrint('Error during file transfer initiation: $e');
       setState(() {
-        _transferStatus = 'error'; // Set status to error
+        _transferStatus = 'error';
+        _statusMessage = 'Failed to pick file. Please try again.';
       });
+    }
+  }
+
+  // UPDATED: New method to handle the actual socket communication
+  Future<void> _sendFile(Socket? clientSocket, File file) async {
+    if (clientSocket == null) {
+      setState(() {
+        _transferStatus = 'error';
+        _statusMessage = 'Connection lost. Please reconnect.';
+      });
+      return;
+    }
+
+    final fileName = file.path.split('/').last;
+    final fileSize = await file.length();
+
+    try {
+      setState(() {
+        _transferStatus = 'transferring';
+        _progress = 0.0;
+      });
+
+      // A. Send metadata (filename and size)
+      final metadata = {'filename': fileName, 'filesize': fileSize};
+      final metadataJson = jsonEncode(metadata);
+      clientSocket.writeln(metadataJson);
+      await clientSocket.flush();
+
+      // B. Send file content in chunks and update progress
+      int bytesSent = 0;
+      await for (var chunk in file.openRead()) {
+        clientSocket.add(chunk);
+        bytesSent += chunk.length;
+        if (mounted) {
+          setState(() {
+            _progress = (bytesSent / fileSize);
+          });
+        }
+      }
+
+      await clientSocket.flush();
+      if (mounted) {
+        setState(() {
+          _transferStatus = 'complete';
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _transferStatus = 'error';
+          _statusMessage = 'File transfer failed: $e';
+        });
+      }
     }
   }
 
@@ -91,11 +132,12 @@ class _TransferScreenState extends State<TransferScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
+                const Spacer(), // Pushes content to the center
                 if (_transferStatus == 'idle' || _transferStatus == 'selecting') _buildIdleState(),
                 if (_transferStatus == 'transferring') _buildTransferringState(),
                 if (_transferStatus == 'complete') _buildCompleteState(),
-                if (_transferStatus == 'error') _buildErrorState(), // Display error state
-                const Spacer(), // Pushes content to the center
+                if (_transferStatus == 'error') _buildErrorState(),
+                const Spacer(), // Pushes the navbar to the bottom
                 _buildNavbar(),
               ],
             ),
@@ -105,40 +147,41 @@ class _TransferScreenState extends State<TransferScreen> {
     );
   }
 
-  // Widget to display when the app is in idle or selecting state
+  // --- UI Builder Methods ---
+
   Widget _buildIdleState() {
+    // Get the connection status from the provider to display it
+    final connectionService = Provider.of<ConnectionService>(context);
+
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Text(
-            "Ready to send or receive files securely.",
+          // UPDATED: Display dynamic status text
+          Text(
+            connectionService.isConnected ? "Connected to a device." : "No active connection.",
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 18, color: Colors.grey),
+            style: TextStyle(
+              fontSize: 18, 
+              color: connectionService.isConnected ? Colors.green : Colors.grey,
+              fontWeight: FontWeight.bold
+            ),
           ),
           const SizedBox(height: 48),
           ElevatedButton.icon(
-            onPressed: _transferStatus == 'selecting'
-                ? null // Disable button while selecting
-                : _handleInitiateTransfer,
+            onPressed: _transferStatus == 'selecting' ? null : _handleInitiateTransfer,
             style: ElevatedButton.styleFrom(
               foregroundColor: Colors.white,
               backgroundColor: Colors.blue[600],
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(30),
-              ),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
               padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
               elevation: 5,
             ),
             icon: _transferStatus == 'selecting'
-                ? const SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                  )
+                ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
                 : const Icon(Icons.send_rounded, size: 28),
             label: Text(
-              _transferStatus == 'selecting' ? "Selecting Files..." : "Start New Transfer",
+              _transferStatus == 'selecting' ? "Selecting Files..." : "Send a File",
               style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
             ),
           ),
@@ -147,19 +190,19 @@ class _TransferScreenState extends State<TransferScreen> {
     );
   }
 
-  // Widget to display when files are being transferred (simulated progress)
   Widget _buildTransferringState() {
     return SizedBox(
       width: double.infinity,
       child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           const Text(
-            "Transferring Files...",
+            "Sending File...",
             style: TextStyle(fontSize: 22, fontWeight: FontWeight.w600, color: Colors.blue),
           ),
           const SizedBox(height: 20),
           LinearProgressIndicator(
-            value: _progress / 100, // Progress from 0.0 to 1.0
+            value: _progress, // Progress from 0.0 to 1.0
             backgroundColor: Colors.grey[200],
             valueColor: const AlwaysStoppedAnimation<Color>(Colors.blue),
             minHeight: 10,
@@ -167,7 +210,7 @@ class _TransferScreenState extends State<TransferScreen> {
           ),
           const SizedBox(height: 10),
           Text(
-            "${_progress.toInt()}% Complete",
+            "${(_progress * 100).toInt()}% Complete",
             style: const TextStyle(fontSize: 16, color: Colors.grey),
           ),
         ],
@@ -175,15 +218,11 @@ class _TransferScreenState extends State<TransferScreen> {
     );
   }
 
-  // Widget to display when the transfer is complete
   Widget _buildCompleteState() {
     return Column(
+       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Icon(
-          Icons.check_circle,
-          color: Colors.green[500],
-          size: 100,
-        ),
+        Icon(Icons.check_circle, color: Colors.green[500], size: 100),
         const SizedBox(height: 20),
         const Text(
           "Transfer Complete!",
@@ -193,30 +232,17 @@ class _TransferScreenState extends State<TransferScreen> {
         const SizedBox(height: 30),
         ElevatedButton(
           onPressed: () => setState(() => _transferStatus = 'idle'),
-          style: ElevatedButton.styleFrom(
-            foregroundColor: Colors.white,
-            backgroundColor: Colors.blue[600],
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(30),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            elevation: 3,
-          ),
-          child: const Text("New Transfer", style: TextStyle(fontSize: 16)),
+          child: const Text("Send Another File", style: TextStyle(fontSize: 16)),
         ),
       ],
     );
   }
 
-  // Widget to display when an error occurs during transfer
   Widget _buildErrorState() {
     return Column(
+       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Icon(
-          Icons.error,
-          color: Colors.red[500],
-          size: 100,
-        ),
+        Icon(Icons.error, color: Colors.red[500], size: 100),
         const SizedBox(height: 20),
         const Text(
           "Transfer Failed!",
@@ -224,30 +250,20 @@ class _TransferScreenState extends State<TransferScreen> {
           style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.red),
         ),
         const SizedBox(height: 10),
-        const Text(
-          "An error occurred during file selection or sharing. Please try again.",
+        Text(
+          _statusMessage, // Display the specific error message
           textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 16, color: Colors.grey),
+          style: const TextStyle(fontSize: 16, color: Colors.grey),
         ),
         const SizedBox(height: 30),
         ElevatedButton(
           onPressed: () => setState(() => _transferStatus = 'idle'),
-          style: ElevatedButton.styleFrom(
-            foregroundColor: Colors.white,
-            backgroundColor: Colors.blue[600],
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(30),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            elevation: 3,
-          ),
           child: const Text("Try Again", style: TextStyle(fontSize: 16)),
         ),
       ],
     );
   }
 
-  // Navbar widget (retained from original code)
   Widget _buildNavbar() {
     return Container(
       decoration: BoxDecoration(
@@ -262,16 +278,14 @@ class _TransferScreenState extends State<TransferScreen> {
               label: "Home",
               onPressed: () => widget.setCurrentScreen('home')),
           NavItem(
-            icon: Icons.sync_alt,
-            label: "Transfer",
-            active: true, // This screen is now active
-            onPressed: () => widget.setCurrentScreen('transfer'),
-          ),
+              icon: Icons.sync_alt,
+              label: "Transfer",
+              active: true,
+              onPressed: () => widget.setCurrentScreen('transfer')),
           NavItem(
-            icon: Icons.settings,
-            label: "Settings",
-            onPressed: () => widget.setCurrentScreen('settings'),
-          ),
+              icon: Icons.settings,
+              label: "Settings",
+              onPressed: () => widget.setCurrentScreen('settings')),
         ],
       ),
     );
