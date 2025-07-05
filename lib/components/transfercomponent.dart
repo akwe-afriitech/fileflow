@@ -251,7 +251,7 @@ class _TransferScreenState extends State<TransferScreen> {
         ),
         const SizedBox(height: 10),
         Text(
-          _statusMessage, // Display the specific error message
+          _statusMessage, 
           textAlign: TextAlign.center,
           style: const TextStyle(fontSize: 16, color: Colors.grey),
         ),

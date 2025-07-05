@@ -32,9 +32,7 @@ class HomeScreen extends StatelessWidget {
                       style: TextStyle(fontSize: 18, color: Colors.grey),
                     ),
                     const SizedBox(height: 20),
-
-                    // --- UPDATED: Connection Status Display ---
-                    // This Text widget now gets its state directly from the service.
+                 // This Text widget now gets its state directly from the service.
                     Text(
                       connectionService.status, // Reading from the service
                       style: TextStyle(
@@ -43,8 +41,6 @@ class HomeScreen extends StatelessWidget {
                         fontSize: 16,
                       ),
                     ),
-                    // --- End of Update ---
-
                     GridView.count(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(), // Disable scrolling inside SingleChildScrollView
@@ -116,8 +112,6 @@ class HomeScreen extends StatelessWidget {
   }
 }
 
-// NOTE: The ConnectionStatusNotifier class has been removed as it's no longer needed.
-
 // Reusable Feature Button for Home Screen (This widget is unchanged)
 class FeatureButton extends StatelessWidget {
   final IconData icon;
@@ -147,7 +141,7 @@ class FeatureButton extends StatelessWidget {
         overlayColor: MaterialStateProperty.resolveWith<Color?>(
               (Set<MaterialState> states) {
             if (states.contains(MaterialState.hovered) || states.contains(MaterialState.pressed)) {
-              return Colors.blue[100]; // Overlay color on hover/press
+              return Colors.blue[100];
             }
             return null; // Defer to the widget's default.
           },

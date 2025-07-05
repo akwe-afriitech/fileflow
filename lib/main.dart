@@ -1,4 +1,3 @@
-import 'package:fileflow/components/filecomponent.dart';
 import 'package:fileflow/components/qrcode.dart';
 import 'package:fileflow/components/settingcomponent.dart';
 import 'package:fileflow/components/transfercomponent.dart';
@@ -10,7 +9,6 @@ import 'package:fileflow/services/changenotifier.dart';
 
 void main() {
   runApp(
-    // Wrap your entire app with the provider
     ChangeNotifierProvider(
       create: (context) => ConnectionService(),
       child: const MyApp(),
@@ -29,7 +27,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
         visualDensity: VisualDensity.adaptivePlatformDensity,
-        fontFamily: 'Inter', // Assuming Inter font is imported or default is fine
+        fontFamily: 'Inter', 
       ),
       home: const AppScreenManager(),
     );
@@ -62,9 +60,9 @@ class _AppScreenManagerState extends State<AppScreenManager> {
       case 'transfer':
         currentWidget = TransferScreen(setCurrentScreen: _setCurrentScreen);
         break;
-      case 'fileSelect':
-        currentWidget = FileSelectScreen(setCurrentScreen: _setCurrentScreen);
-        break;
+      // case 'fileSelect':
+      //   currentWidget = FileSelectScreen(setCurrentScreen: _setCurrentScreen);
+      //   break;
       case 'settings':
         currentWidget = SettingsScreen(setCurrentScreen: _setCurrentScreen);
         break;

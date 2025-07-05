@@ -26,7 +26,7 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
           fontSize: 20,
         ),
       ),
-      centerTitle: onBack == null, // Center title only if no back button
+      centerTitle: onBack == null, 
     );
   }
 

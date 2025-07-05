@@ -1,9 +1,8 @@
-// A simple model to represent a discovered service on the network.
 class DiscoveredDevice {
   final String name;
   final String ip;
   final int port;
-  String status; // e.g., 'Available', 'Connected', 'Failed'
+  String status; 
 
   DiscoveredDevice({
     required this.name,
@@ -12,7 +11,6 @@ class DiscoveredDevice {
     this.status = 'Available',
   });
 
-  // Optional: For easy debugging and checking for duplicates.
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||

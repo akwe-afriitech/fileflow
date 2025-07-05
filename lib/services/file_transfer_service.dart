@@ -11,7 +11,7 @@ class DiscoveredDevice {
   final String name;
   final String ip;
   final int port;
-  String status; // e.g., 'Available', 'Connected', 'Failed'
+  String status; 
 
   DiscoveredDevice({
     required this.name,
@@ -106,7 +106,7 @@ class FileTransferService {
   // == DISCOVERY (WHEN YOU SCAN FOR DEVICES) ==
   Future<void> startDiscovery() async {
     if (_discovery != null) {
-      await stopDiscovery(); // Stop any previous discovery
+      await stopDiscovery(); 
     }
     
     _discoveredDevices.clear();
