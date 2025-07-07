@@ -74,7 +74,8 @@ class _AppScreenManagerState extends State<AppScreenManager> {
         break;
       default:
         currentWidget = HomeScreen(setCurrentScreen: _setCurrentScreen);
-    }
+        break;
+        }
 
     return Scaffold(
       body: Center(

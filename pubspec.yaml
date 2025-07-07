@@ -41,10 +41,13 @@ dependencies:
   mobile_scanner: ^5.1.0 
   path_provider: ^2.0.14
   file_picker: ^5.2.6
-  nsd: ^4.0.3 
+  # nsd: ^4.0.3 
   provider: ^6.1.2
   bonsoir: ^5.1.11
   device_info_plus: ^9.1.2 
+  intl: ^0.20.2
+  encrypt: ^5.0.3
+  flutter_secure_storage: ^6.0.0
   
 dev_dependencies:
   flutter_test:
