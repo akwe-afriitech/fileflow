@@ -129,6 +129,8 @@ class _QRCodeScreenState extends State<QRCodeScreen> {
   }
 
 
+ // In your _QRCodeScreenState class
+
 void _listenForData(Socket socket) {
   List<int> buffer = [];
   String? fileName;
@@ -180,9 +182,11 @@ void _listenForData(Socket socket) {
       }
     },
     onDone: () async {
-      await completer.future; 
+      await completer.future; // This is crucial and you already had it - great job!
       await fileSink?.flush();
       await fileSink?.close();
+      
+      // FIX: Use the context if it's still mounted
       if(mounted) {
         Provider.of<ConnectionService>(context, listen: false).disconnect();
         setState(() {

@@ -173,8 +173,7 @@ class _RecentTransfersState extends State<RecentTransfers> {
             "${transfer.fileSizeInMB.toStringAsFixed(2)} MB • From ${transfer.sourceDeviceName}",
             style: TextStyle(color: widget.secondaryColor, fontSize: 13),
           ),
-          trailing: Text(
-            DateFormat('MMM d').format(transfer.transferDate), // e.g., "Jul 6"
+          trailing: Text( "${DateFormat.yMMMd().format(transfer.transferDate)}",
             style: TextStyle(fontSize: 12, color: widget.secondaryColor),
           ),
         ),

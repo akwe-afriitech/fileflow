@@ -1,5 +1,6 @@
 // lib/screens/home_screen.dart
 
+import 'dart:io';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -9,6 +10,9 @@ import 'package:fileflow/components/navbar.dart';
 import 'package:fileflow/services/changenotifier.dart';
 import 'package:fileflow/components/recentTransfers.dart';
 import 'package:fileflow/models/transfers.dart';
+import 'package:path_provider/path_provider.dart'; // NEW: Import path_provider
+import 'package:fileflow/models/transfers.dart'; // Ensure this import is correct
+
 
 class HomeScreen extends StatefulWidget {
   final Function(String) setCurrentScreen;
@@ -29,48 +33,99 @@ class _HomeScreenState extends State<HomeScreen> {
     _fetchTransfers();
   }
 
-  // Simulate fetching recent transfer data
-  Future<void> _fetchTransfers() async {
-    setState(() => _isLoadingTransfers = true);
-    await Future.delayed(const Duration(seconds: 2));
+Future<void> _fetchTransfers() async {
+  setState(() => _isLoadingTransfers = true);
 
-    final dummyData = List.generate(5, (i) {
-      final fileTypes = FileType.values;
-      return Transfer(
-        id: 'transfer_$i',
-        fileName: 'report_part_${i + 1}.docx',
-        fileSizeInMB: double.parse((Random().nextDouble() * 25).toStringAsFixed(2)),
-        transferDate: DateTime.now().subtract(Duration(days: i)),
-        sourceDeviceName: i.isEven ? "Android-TV" : "Jane's Laptop",
-        fileType: fileTypes[Random().nextInt(fileTypes.length)],
-      );
-    });
+  List<Transfer> fetchedTransfers = [];
+  try {
+    // Get the external storage directory
+    final directories = await getExternalStorageDirectories();
+    if (directories != null && directories.isNotEmpty) {
+      // Assuming you want to use the first directory for downloads
+      final downloadDir = Directory('${directories.first.path}/Downloads');
 
-    if (mounted) {
-      setState(() {
-        _transfers = dummyData;
-        _isLoadingTransfers = false;
-      });
+      // Check if the Downloads directory exists
+      if (await downloadDir.exists()) {
+        final files = downloadDir.listSync(recursive: true, followLinks: false);
+
+        for (var entity in files) {
+          if (entity is File) {
+            try {
+              final file = entity;
+              final fileStat = await file.stat();
+              final fileName = file.path.split('/').last;
+              final fileSizeInMB = fileStat.size / (1024 * 1024); // Convert bytes to MB
+              final transferDate = fileStat.modified;
+
+              // Determine file type from extension
+              FileType fileType = FileType.other;
+              final extension = fileName.split('.').last.toLowerCase();
+              if (['jpg', 'jpeg', 'png', 'gif'].contains(extension)) {
+                fileType = FileType.image;
+              } else if (['mp4', 'mov', 'avi'].contains(extension)) {
+                fileType = FileType.video;
+              } else if (['mp3', 'wav', 'aac'].contains(extension)) {
+                fileType = FileType.audio;
+              } else if (extension == 'pdf') {
+                fileType = FileType.document;
+              } else if (['zip', 'rar', '7z'].contains(extension)) {
+                fileType = FileType.archive;
+              } else if (['txt', 'docx', 'xlsx', 'pptx'].contains(extension)) {
+                fileType = FileType.document;
+              }
+
+              fetchedTransfers.add(
+                Transfer(
+                  id: file.path, // Using file path as a unique ID
+                  fileName: fileName,
+                  fileSizeInMB: double.parse(fileSizeInMB.toStringAsFixed(2)),
+                  transferDate: transferDate,
+                  sourceDeviceName: "This Device", // Since it's from local app dir
+                  fileType: fileType,
+                ),
+              );
+            } catch (e) {
+              // Handle errors for individual files
+              print("Error reading file ${entity.path}: $e");
+            }
+          }
+        }
+      } else {
+        print("Downloads directory does not exist.");
+      }
     }
+    // Sort files by modification date (most recent first)
+    fetchedTransfers.sort((a, b) => b.transferDate.compareTo(a.transferDate));
+
+  } catch (e) {
+    print("Error fetching files from Downloads directory: $e");
+    // Optionally show an error message to the user
   }
 
-  // Handle tapping on a transfer item
-  void _handleTap(Transfer transfer) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text("Viewing details for ${transfer.fileName}")),
-    );
-  }
-
-  // Handle dismissing a transfer item
-  void _handleDismiss(Transfer transfer) {
+  if (mounted) {
     setState(() {
-      _transfers.removeWhere((t) => t.id == transfer.id);
+      _transfers = fetchedTransfers;
+      _isLoadingTransfers = false;
     });
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text("${transfer.fileName} was removed.")),
-    );
   }
+}
 
+// Handle tapping on a transfer item
+void _handleTap(Transfer transfer) {
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(content: Text("Viewing details for ${transfer.fileName}")),
+  );
+}
+
+// Handle dismissing a transfer item
+void _handleDismiss(Transfer transfer) {
+  setState(() {
+    _transfers.removeWhere((t) => t.id == transfer.id);
+  });
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(content: Text("${transfer.fileName} was removed.")),
+  );
+}
   @override
   Widget build(BuildContext context) {
     return Consumer<ConnectionService>(

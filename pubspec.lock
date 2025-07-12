@@ -9,14 +9,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.7.0"
-  asn1lib:
-    dependency: transitive
-    description:
-      name: asn1lib
-      sha256: "9a8f69025044eb466b9b60ef3bc3ac99b4dc6c158ae9c56d25eeccf5bc56d024"
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.6.5"
   async:
     dependency: transitive
     description:
@@ -105,14 +97,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.19.0"
-  convert:
-    dependency: transitive
-    description:
-      name: convert
-      sha256: b30acd5944035672bc15c6b7a8b47d773e41e2f17de064350988c5d02adb1c68
-      url: "https://pub.dev"
-    source: hosted
-    version: "3.1.2"
   cross_file:
     dependency: transitive
     description:
@@ -161,14 +145,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "7.0.2"
-  encrypt:
-    dependency: "direct main"
-    description:
-      name: encrypt
-      sha256: "62d9aa4670cc2a8798bab89b39fc71b6dfbacf615de6cf5001fb39f7e4a996a2"
-      url: "https://pub.dev"
-    source: hosted
-    version: "5.0.3"
   fake_async:
     dependency: transitive
     description:
@@ -238,54 +214,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.0.26"
-  flutter_secure_storage:
-    dependency: "direct main"
-    description:
-      name: flutter_secure_storage
-      sha256: de957362e046bc68da8dcf6c1d922cb8bdad8dd4979ec69480cf1a3c481abe8e
-      url: "https://pub.dev"
-    source: hosted
-    version: "6.1.0"
-  flutter_secure_storage_linux:
-    dependency: transitive
-    description:
-      name: flutter_secure_storage_linux
-      sha256: be76c1d24a97d0b98f8b54bce6b481a380a6590df992d0098f868ad54dc8f688
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.2.3"
-  flutter_secure_storage_macos:
-    dependency: transitive
-    description:
-      name: flutter_secure_storage_macos
-      sha256: "388f76fd0f093e7415a39ec4c169ae7cceeee6d9f9ba529d788a13f2be4de7bd"
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.1.2"
-  flutter_secure_storage_platform_interface:
-    dependency: transitive
-    description:
-      name: flutter_secure_storage_platform_interface
-      sha256: cf91ad32ce5adef6fba4d736a542baca9daf3beac4db2d04be350b87f69ac4a8
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.1.2"
-  flutter_secure_storage_web:
-    dependency: transitive
-    description:
-      name: flutter_secure_storage_web
-      sha256: f4ebff989b4f07b2656fb16b47852c0aab9fed9b4ec1c70103368337bc1886a9
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.2.1"
-  flutter_secure_storage_windows:
-    dependency: transitive
-    description:
-      name: flutter_secure_storage_windows
-      sha256: ca89c8059cf439985aa83c59619b3674c7ef6cc2e86943d169a7369d6a69cab5
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.1.3"
   flutter_test:
     dependency: "direct dev"
     description: flutter
@@ -316,18 +244,10 @@ packages:
     dependency: "direct main"
     description:
       name: intl
-      sha256: "3df61194eb431efc39c4ceba583b95633a403f46c9fd341e550ce0bfa50e9aa5"
+      sha256: "3bc132a9dbce73a7e4a21a17d06e1878839ffbf975568bc875c60537824b0c4d"
       url: "https://pub.dev"
     source: hosted
-    version: "0.20.2"
-  js:
-    dependency: transitive
-    description:
-      name: js
-      sha256: f2c445dce49627136094980615a031419f7f3eb393237e4ecd97ac15dea343f3
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.6.7"
+    version: "0.18.1"
   leak_tracker:
     dependency: transitive
     description:
@@ -408,6 +328,54 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.0"
+  nsd:
+    dependency: "direct main"
+    description:
+      name: nsd
+      sha256: cae71ee9c23ea7f75d4610efe7ff335b1f575fb93ef7b7f9a5c6183a091cbb74
+      url: "https://pub.dev"
+    source: hosted
+    version: "4.0.3"
+  nsd_android:
+    dependency: transitive
+    description:
+      name: nsd_android
+      sha256: "1309cd47d02c99bd305219f0a226644f9f4a964d341c3d6730cebb906bb1ec78"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.1.2"
+  nsd_ios:
+    dependency: transitive
+    description:
+      name: nsd_ios
+      sha256: "562fffe753543a65190344d3acd0ed80d96c571ac1a05bf10780c5584b5055ac"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.0.1"
+  nsd_macos:
+    dependency: transitive
+    description:
+      name: nsd_macos
+      sha256: "47cd355d84009befe02710c72bf1c1999b24d5f3fb3a3d914f8b77bcaca42542"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.0.1"
+  nsd_platform_interface:
+    dependency: transitive
+    description:
+      name: nsd_platform_interface
+      sha256: "7220c8e0beeacd06c180fefcd6bb708415ed889c76f656e75ac633d09ceaa761"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.1.1"
+  nsd_windows:
+    dependency: transitive
+    description:
+      name: nsd_windows
+      sha256: "68b4a256b0be258dbbad0ae789f2e8838d0935a353dac86b17c14c1a05df4ecd"
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.0.1"
   path:
     dependency: transitive
     description:
@@ -536,14 +504,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.1.8"
-  pointycastle:
-    dependency: transitive
-    description:
-      name: pointycastle
-      sha256: "4be0097fcf3fd3e8449e53730c631200ebc7b88016acecab2b0da2f0149222fe"
-      url: "https://pub.dev"
-    source: hosted
-    version: "3.9.1"
   provider:
     dependency: "direct main"
     description:
